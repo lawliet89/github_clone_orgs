@@ -72,24 +72,31 @@ def main():
         "OUTPUT_BASE", os.path.join(os.getcwd(), "repos"))
 
     orgs = get_orgs(access_key)
+    failed = []
     print("Organisations: {}".format(", ".join(orgs)))
 
     for org in orgs:
         print("Repos for {}".format(org))
         for repo in get_org_repos(access_key, org):
-            output_path = os.path.join(
-                output_base, "/".join([org, repo['name']]))
-            if os.path.isdir(output_path):
-                print("Pulling: {} in {}".format(
-                    repo["full_name"], output_path))
-                repo = git.Repo(output_path)
-                origin = repo.remote()
-                origin.pull()
-            else:
-                print("Cloning: {} to {}".format(
-                    repo["full_name"], output_path))
-                git.Repo.clone_from(
-                    repo['ssh_url'], output_path, **{"recurse-submodules": True})
+            try:
+                output_path = os.path.join(
+                    output_base, "/".join([org, repo['name']]))
+                if os.path.isdir(output_path):
+                    print("Pulling: {} in {}".format(
+                        repo["full_name"], output_path))
+                    repo = git.Repo(output_path)
+                    origin = repo.remote()
+                    origin.pull()
+                else:
+                    print("Cloning: {} to {}".format(
+                        repo["full_name"], output_path))
+                    git.Repo.clone_from(
+                        repo['ssh_url'], output_path, **{"recurse-submodules": True})
+            except Exception as e:
+                print("Failed {}: {}".format(repo["full_name"], e))
+                failed.append(repo["full"])
+
+    print("Failed repositories: {}".format(", ".join(failed)))
 
 
 if __name__ == "__main__":
